@@ -15,10 +15,7 @@ from collections import Counter
 import os
 
 CONFIG = {
-    'user':'test',
-    'password':'ihaveallthekeys',
-    'host':'test-app.klipfolio.com',
-    'database':'saas'
+
     }
 connection = mysql.connector.connect(**CONFIG)
 connection2 = mysql.connector.connect(**CONFIG)
