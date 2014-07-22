@@ -1,5 +1,5 @@
 # Sarmad Hashmi
-# Last Updated: July 22, 2014
+# July 22, 2014
 
 import mysql.connector
 import json
@@ -14,12 +14,8 @@ import ttk
 from collections import Counter
 import os
 
-CONFIG = {
-    'user':'test',
-    'password':'ihaveallthekeys',
-    'host':'test-app.klipfolio.com',
-    'database':'saas'
-    }
+CONFIG = open('./config.json').read()
+CONFIG = json.loads(CONFIG)
 connection = mysql.connector.connect(**CONFIG)
 connection2 = mysql.connector.connect(**CONFIG)
 cursor = connection.cursor()
