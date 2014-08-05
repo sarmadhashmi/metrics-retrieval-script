@@ -7,6 +7,6 @@ Klipfolio Metrics App
 
 Running the Mac Version
 =======================
-- Download [OSX_MetricsApp.zip](OSX_MetricsApp.zip?raw=true). Extract it.
-- Go into MetricsApp.app/Contents/Resources and edit config.json
-- Double click MetricsApp.app
+- Download [OSX_MetricsApp.zip](OSX_MetricsApp.zip?raw=true). Extract it. Right click and show package contents.
+- Go into Contents/Resources and edit config.json
+- Go back to the folder where you downloaded the package, double click MetricsApp.app
