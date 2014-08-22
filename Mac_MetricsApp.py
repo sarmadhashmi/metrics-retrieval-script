@@ -45,11 +45,11 @@ class Table:
             
     def create_dropdown_for_options(self, tk, x, y):
         self.optionMenu = OptionMenu(tk, self.selected_option, *self.options)
-        self.optionMenu.grid(row=x,column=y, sticky=E)
+        self.optionMenu.grid(row=x,column=y, sticky='w')
         self.selected_option.set(self.options[0])
 
     def create_checkbox_for_table(self, tk, x, y):
-        Checkbutton(tk, text="Total # of {}".format(self.table_name), variable=self.checkbox_state).grid(row=x,column=y, sticky=W)
+        Checkbutton(tk, text="Total # of {}".format(self.table_name), variable=self.checkbox_state).grid(row=x,column=y, sticky='w')
 
     def get_checkbox_state(self):
         return self.checkbox_state.get()
@@ -79,36 +79,36 @@ class Table:
                 self.get_count_from_json_col(o['col_name'],o['parse'].split(','), None, companies,company_public_ids)
                 
     
-    def get_count(self, companies=[], company_public_ids = None, col_name = None):
-        companies_string = ', '.join(str(v) for v in companies)        
-        if not companies:
-            companies_string = 'SELECT id FROM company'        
+    def get_count(self, companies_map, col_name = None):
+        companies_string = ', '.join(str(v) for v in companies_map.keys())
+        print(companies_string)
         if col_name and col_name != "Sort By":
             self.create_file_and_writer(col_name)
             if 'date' in col_name and 'company_id' in self.options:
                 query = "SELECT DATE({}),COUNT(*) as count FROM {} WHERE company_id IN ({}) GROUP BY DATE({}) ORDER BY DATE({}) DESC".format(col_name, self.table_name, companies_string, col_name,col_name)
+                self.writers[col_name].writerow([col_name, "# of {}".format(self.table_name)])
             elif 'date' in col_name:
                 query = "SELECT DATE({}),COUNT(*) as count FROM {} GROUP BY DATE({}) ORDER BY DATE({}) DESC".format(col_name, self.table_name, col_name,col_name)
-            elif "company_id" in self.options:
+                self.writers[col_name].writerow([col_name, "# of {}".format(self.table_name)])
+            elif col_name == "company_id":
                 query = "SELECT {},COUNT(*) as count FROM {} WHERE company_id IN ({}) GROUP BY {} ORDER BY count DESC".format(col_name, self.table_name, companies_string, col_name)
+                self.writers[col_name].writerow(["Company Name", "Public ID", "# of {}".format(self.table_name)])                
             elif self.table_name == "company":
                 query = "SELECT {},COUNT(*) as count FROM {} WHERE id IN ({}) GROUP BY {} ORDER BY count DESC".format(col_name, self.table_name, companies_string, col_name)
+                self.writers[col_name].writerow([col_name, "# of {}".format(self.table_name)])
             else:
-                query = "SELECT {},COUNT(*) as count FROM {} GROUP BY {} ORDER BY count DESC".format(col_name, self.table_name, col_name)
+                query = "SELECT {},COUNT(*) as count FROM {} WHERE company_id IN ({}) GROUP BY {} ORDER BY count DESC".format(col_name, self.table_name, companies_string, col_name)
+                self.writers[col_name].writerow([col_name, "# of {}".format(self.table_name)])           
+                 
             cursor.execute(query)
-            for row in cursor:
+            for row in cursor:                
                 c = row[0]
                 if col_name in self.constants:
-                    c = self.constants[col_name][c]                
-                if companies[0]==row[0]:
-                    self.writers[col_name].writerow(["{}:{}:{}:count".format(self.table_name, col_name,"PARTNER"), row[1]])
-                elif col_name == "company_id":
-                    if company_public_ids:
-                        self.writers[col_name].writerow(["{}:{}:{}:count".format(self.table_name, col_name, company_public_ids[c]), row[1]])
-                    else:
-                        self.writers[col_name].writerow(["{}:{}:{}:count".format(self.table_name, col_name, c), row[1]])
+                    c = self.constants[col_name][c]
+                if col_name == "company_id":
+                    self.writers[col_name].writerow([companies_map[c]["name"], companies_map[c]["public_id"], row[1]])                    
                 else:
-                    self.writers[col_name].writerow(["{}:{}:{}:count".format(self.table_name, col_name,c), row[1]])
+                    self.writers[col_name].writerow([c, row[1]])
         if "company_id" in self.options:
             query = "SELECT COUNT(*) FROM {} WHERE company_id IN ({})".format(self.table_name, companies_string)
         elif self.table_name == "company":
@@ -212,31 +212,32 @@ class Table:
 
 def main():
     start = time.clock()
-    partner = partnerID.get()    
-    company_public_ids = {}
-    companies = []
+    partner = partnerID.get()
+    companyIDs = cid.get()
+    companies_map = {}
     global dir_name, main_file, main_writer
-    
-    if partner and not cid.get():
+    if companyIDs:
+        ids = companyIDs.split(',')
+        query = "SELECT id, public_id, name FROM company c WHERE c.public_id in ({})".format(', '.join('"{0}"'.format(id) for id in  ids))   
+    if partner and not companyIDs:
         cursor.execute("SELECT name FROM company WHERE public_id='{}'".format(partner))
         dir_name = cursor.fetchall()[0][0] + '-data'
         if not os.path.exists(dir_name):
             os.makedirs(dir_name)
         if withoutPartner.get():
-            query = "SELECT c.id, c.public_id FROM company c1 LEFT JOIN company c ON c.partner_parent_id = c1.id WHERE c1.public_id = '{}'".format(partner, partner)
+            query = "SELECT c.id, c.public_id, c.name FROM company c1 LEFT JOIN company c ON c.partner_parent_id = c1.id WHERE c1.public_id = '{}'".format(partner, partner)
         else:
-            query = "SELECT c.id, c.public_id FROM company c1 LEFT JOIN company c ON(c.partner_parent_id = c1.id OR c.public_id = '{}') WHERE c1.public_id = '{}'".format(partner, partner)
-    elif not partner and not cid.get():
-        query = "SELECT id, public_id FROM company c"
-    elif not partner and cid.get():
-        ids = cid.get().split(', ')
-        query = "SELECT id, public_id FROM company c WHERE c.public_id in ({})".format(', '.join('"{0}"'.format(id) for id in  ids))
-    if activeOnly.get() and not(not partner and not cid.get()):
+            query = "SELECT c.id, c.public_id, c.name FROM company c1 LEFT JOIN company c ON(c.partner_parent_id = c1.id OR c.public_id = '{}') WHERE c1.public_id = '{}'".format(partner, partner)
+    elif not partner and not companyIDs:
+        query = "SELECT id, public_id FROM company c"        
+
+    if activeOnly.get() and not(not partner and not companyIDs):
         query += " AND c.state = 5"  #only active companies
     cursor.execute(query)
     for item in cursor:
-        companies.append(item[0])
-        company_public_ids[item[0]] = item[1]
+        companies_map[item[0]] = {}
+        companies_map[item[0]]["public_id"] = item[1]
+        companies_map[item[0]]["name"] = item[2]    
     if not dir_name:
         if not os.path.exists('data'):
             os.makedirs('data')
@@ -247,11 +248,11 @@ def main():
     for t in tables:
         if t.get_checkbox_state():            
             if t.get_dropdown_option() in t.get_custom_options():
-                t.get_count_for_custom_col(companies,company_public_ids, t.get_dropdown_option())
-            elif t.get_dropdown_option():
-                t.get_count(companies, company_public_ids, t.get_dropdown_option())
+               t.get_count_for_custom_col(companies_map, t.get_dropdown_option())               
+            elif t.get_dropdown_option():                
+                t.get_count(companies_map, t.get_dropdown_option())
             else:
-                t.get_count(companies, company_public_ids)
+                t.get_count(companie_map)                
             t.close_all_files()
     main_file.close()
     end = time.clock()
@@ -270,15 +271,14 @@ if __name__ == "__main__":
     withoutPartner = IntVar()
     activeOnly = IntVar()
     master.wm_title("KF stats")
-    Label(text="Partner PUBLIC ID/Account #").grid(row=0, column=0)
-    Label(text="Company PUBLIC IDs (seperated by commas)").grid(row=1, column=0)
-    Checkbutton(master, text="Without Partner?", variable=withoutPartner).grid(row=0,column=2)
-    Checkbutton(master, text="Only Active Companies?", variable=activeOnly).grid(row=0,column=3)
-    partner = Entry(master, textvariable=partnerID, width=80).grid(row=0, column = 1)
-    company = Entry(master, textvariable=cid, width=80).grid(row=1, column = 1)
-   
+    Label(text="Partner PUBLIC ID/Account #").grid(row=0, column=0, sticky="w")
+    Label(text="Company PUBLIC IDs (seperated by commas)").grid(row=1, column=0, sticky="w")
+    partner = Entry(master, textvariable=partnerID, width=50).grid(row=0, column = 1, sticky="w")
+    company = Entry(master, textvariable=cid, width=50).grid(row=1, column = 1, sticky="w")
+    Checkbutton(master, text="Without Partner?", variable=withoutPartner).grid(row=0,column=2, sticky="w")
+    Checkbutton(master, text="Only Active Companies?", variable=activeOnly).grid(row=0,column=3, sticky="w")
     row = 2
-    col=0
+    col = 0
     i = 0
     for c in cursor:
         t = Table(c[0],master,row,col)
@@ -288,10 +288,9 @@ if __name__ == "__main__":
         row += 1
         i+=1
         if i>25:
-            i=0
-            last_row=row
-            row= 2
-            col=2
-            break
+            i = 0
+            last_row = row
+            row = 2
+            col += 2            
     button = Button(master, text="Get Data", command=main).grid(row=last_row,column=1)
     master.mainloop()
