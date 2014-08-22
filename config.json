@@ -1,6 +1,6 @@
 {
 	"user":"user",
-    "passwd":"password",
-    "host":"host",
-    "database":"db"
+	"passwd":"password",
+	"host":"host",
+	"database":"db"
 }
