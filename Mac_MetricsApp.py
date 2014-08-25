@@ -80,8 +80,7 @@ class Table:
                 
     
     def get_count(self, companies_map, col_name = None):
-        companies_string = ', '.join(str(v) for v in companies_map.keys())
-        print(companies_string)
+        companies_string = ', '.join(str(v) for v in companies_map.keys())        
         if col_name and col_name != "Sort By":
             self.create_file_and_writer(col_name)
             if 'date' in col_name and 'company_id' in self.options:
@@ -229,7 +228,7 @@ def main():
         else:
             query = "SELECT c.id, c.public_id, c.name FROM company c1 LEFT JOIN company c ON(c.partner_parent_id = c1.id OR c.public_id = '{}') WHERE c1.public_id = '{}'".format(partner, partner)
     elif not partner and not companyIDs:
-        query = "SELECT id, public_id FROM company c"        
+        query = "SELECT id, public_id, name FROM company c"        
 
     if activeOnly.get() and not(not partner and not companyIDs):
         query += " AND c.state = 5"  #only active companies
@@ -265,7 +264,7 @@ if __name__ == "__main__":
     outputted_files = []
     tables = []
     master = Tk()
-    
+
     partnerID = StringVar()
     cid = StringVar()
     withoutPartner = IntVar()
