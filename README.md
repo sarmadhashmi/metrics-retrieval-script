@@ -6,5 +6,5 @@ Klipfolio Metrics App
 
 Running it
 =======================
-- Download [Mac_MetricsApp.py](Mac_MetricsApp.py?raw=true).
+- Download [MetricsApp.py](MetricsApp.py?raw=true) and [config.json](config.json?raw=true).
 - Open terminal and type "python Mac_MetricsApp.py". Install any required modules.
