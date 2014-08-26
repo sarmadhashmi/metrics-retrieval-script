@@ -214,12 +214,14 @@ def main():
     partner = partnerID.get()
     companyIDs = cid.get()
     companies_map = {}
-    global dir_name, main_file, main_writer
+    global dir_name, main_file, main_writer    
     if companyIDs:
         ids = companyIDs.split(',')
+        ids = [i.strip() for i in ids]
+        print ids
         query = "SELECT id, public_id, name FROM company c WHERE c.public_id in ({})".format(', '.join('"{0}"'.format(id) for id in  ids))   
     if partner and not companyIDs:
-        cursor.execute("SELECT name FROM company WHERE public_id='{}'".format(partner))
+        cursor.execute("SELECT name FROM company WHERE public_id='{}'".format(partner))        
         dir_name = cursor.fetchall()[0][0] + '-data'
         if not os.path.exists(dir_name):
             os.makedirs(dir_name)
